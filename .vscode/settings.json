@@ -27,5 +27,6 @@
     "python.formatting.provider": "yapf",
     "[json]": {
 	    "editor.formatOnSave": false
-    }
+    },
+    "cmake.sourceDirectory": "/wsl.localhost/Ubuntu/home/brad/qmk_firmware/lib/pico-sdk/src/rp2_common/pico_runtime"
 }
