@@ -29,6 +29,10 @@
 #    include "factory_test.h"
 #endif
 
+
+#include "user_hid.h"
+
+
 #define POWER_ON_LED_DURATION 3000
 
 typedef struct PACKED {
@@ -274,6 +278,12 @@ void battery_calculte_voltage(uint16_t value) {
 }
 
 bool via_command_kb(uint8_t *data, uint8_t length) {
+//#ifdef USER_HID_COMMAND
+    if ((data[0] & 0xB0) == 0xB0) {
+        user_hid_command(data, length);
+        return true;
+    }
+//#endif
     switch (data[0]) {
 #ifdef KC_BLUETOOTH_ENABLE
         case 0xAA:
@@ -285,6 +295,7 @@ bool via_command_kb(uint8_t *data, uint8_t length) {
             factory_test_rx(data, length);
             break;
 #endif
+
         default:
             return false;
     }
