@@ -18,6 +18,8 @@
 #include "via.h"
 #include "print.h"
 #include "raw_hid.h"
+#include "rgb_matrix.h"
+#include "timer.h"
 
 // clang-format off
 enum layers{
@@ -71,18 +73,56 @@ enum CustomCommands {
     custom_command2 = 0xB1,
 };
 
+typedef struct {
+    bool activate;
+    uint8_t key_index;
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+    uint8_t timeout;
+
+} AlertData;
+
+AlertData alert = {};
+uint16_t blink_timer = 0;
+bool blink_state;
+
 void keyboard_post_init_user(void) {
     debug_enable = true;
     //debug_matrix = true;
     //debug_keyboard = true;
+
+}
+
+bool rgb_matrix_indicators_user(void) {
+    /*for (int i = 0; i < RGB_MATRIX_LED_COUNT; i++) {
+        uprintf("id = %d\n", i);
+        rgb_matrix_set_color(i, 255, 0, 0);
+    }*/
+    if (timer_elapsed(blink_timer) > 500) {
+        blink_state = !blink_state;
+        blink_timer = timer_read();
+    }
+
+    if (alert.activate) {
+        if (blink_state) {
+            rgb_matrix_set_color(alert.key_index, alert.r, alert.g, alert.b);
+        } else {
+            rgb_matrix_set_color(alert.key_index, 0, 0, 0);
+        }
+    }
+    return true;
 }
 
 //bool via_command_kb(uint8_t *data, uint8_t length) {
 void user_hid_command(uint8_t *data, uint8_t length) {
     uint8_t *command_id        = &(data[0]);
-    uint8_t *value_id_and_data = &(data[2]);
-
-    uprintf("custom command handler: %d, %d, %d\n", *command_id, *value_id_and_data, length);
+    uint8_t *activate = &(data[1]);
+    uint8_t *key_index = &(data[2]);
+    uint8_t *r = &(data[3]);
+    uint8_t *g = &(data[4]);
+    uint8_t *b = &(data[5]);
+    uprintf("custom command handler: %d, %d, %d\n", *command_id, *key_index, length);
 
     if (*command_id == custom_command1) {
         uprintf("handled a custom command 1\n");
@@ -90,7 +130,17 @@ void user_hid_command(uint8_t *data, uint8_t length) {
         // Return the unhandled state
         //*command_id = id_unhandled; // Not sure if we need to do this as well?
         raw_hid_send(data, length);
+        alert.activate = *activate;
+        alert.key_index = *key_index;
+        alert.r = *r;
+        alert.g = *g;
+        alert.b = *b;
         //return true;
+        //rgb_matrix_toggle();
+
+
+            //rgb_matrix_set_color_all(255, 0, 0);
+
     }
     else if (*command_id == custom_command2) {
         uprintf("handled a custom command 2\n");
